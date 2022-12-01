@@ -1,0 +1,35 @@
+{
+  "ts-node": {
+    "transpileOnly": false,
+    "files": true,
+    "esm": true,
+    "compilerOptions": {
+      "lib": [
+        "es2022"
+      ],
+      "module": "es2022",
+      "target": "es2022",
+      "strict": true,
+      "esModuleInterop": true,
+      "skipLibCheck": true,
+      "forceConsistentCasingInFileNames": true,
+      "moduleResolution": "node",
+      "allowUnusedLabels": false,
+      "allowUnreachableCode": false,
+      "exactOptionalPropertyTypes": true,
+      "noFallthroughCasesInSwitch": true,
+      "noImplicitAny": false,
+      "noImplicitOverride": true,
+      "noImplicitReturns": true,
+      "noPropertyAccessFromIndexSignature": true,
+      "noUncheckedIndexedAccess": true,
+      "noUnusedLocals": true,
+      "noUnusedParameters": true,
+      "importsNotUsedAsValues": "error",
+      "checkJs": true
+    }
+  },
+  "compilerOptions": {
+  }
+}
+
