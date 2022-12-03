@@ -21,160 +21,147 @@
 
 // https://adventofcode.com/2022/day/2
 
-import { readFile } from '../lib/io.js';
-import type { Immutable } from '../lib/immutable';
+import { readFileToStringArray } from '../lib/io.js';
+import { ensure } from '../lib/util.js';
 
-const score: Immutable<{}> = {
-  'rock': 1,
-  'paper': 2,
-  'scissors': 3,
-};
+import type { Immutable, IArray, IObject } from '../lib/immutable';
 
-const rochambeau: Immutable<{}> = {
-  A: 'rock',
-  X: 'rock',
-  B: 'paper',
-  Y: 'paper',
-  C: 'scissors',
-  Z: 'scissors',
+type IScores = Immutable<[number, number]>;
+type Player = Immutable<{
+  play: Play,
+  score: number,
+}>;
+type IPlayers = Immutable<[Player, Player]>;
+type Play = Immutable<{
+  name: string,
+  score: number,
+}>;
+
+export const rock: Play = { name: 'rock', score: 1 };
+export const paper: Play = { name: 'paper', score: 2 };
+export const scissors: Play = { name: 'scissors', score: 3 };
+
+const rochambeau: IObject = {
+  A: rock,
+  X: rock,
+  B: paper,
+  Y: paper,
+  C: scissors,
+  Z: scissors,
 }
 
-const strategy: Immutable<{}> = {
+const strategy: IObject = {
   X: 'lose',
   Y: 'draw',
   Z: 'win',
 }
 
-function parseFileIntoLinesArray(b: Buffer): Immutable<string[]> {
-  const arr: Immutable<string[]> = b.toString().trim().split('\n');
-  return arr;
+function beats(play: Play): Play {
+  switch (play) {
+    case rock:
+      return scissors;
+    case paper:
+      return rock;
+    case scissors:
+      return paper;
+    default:
+      throw new Error('incompatible play type');
+  }
 }
 
-function choosePlay(round: Immutable<string>): string {
-  const err = new Error('could not choose play');
-  const opponent = round[0] || '';
-  const strat = strategy[round[2] || ''];
+function beatenBy(play: Play): Play {
+  switch (play) {
+    case rock:
+      return paper;
+    case paper:
+      return scissors;
+    case scissors:
+      return rock;
+    default:
+      throw new Error('incompatible play type');
+  }
+}
+
+function choosePlay(player1: Player, s: string): Play {
+  const strat = strategy[s];
 
   switch (strat) {
     case 'win':
-      switch (opponent) {
-        case 'A':
-          return 'B';
-        case 'B':
-          return 'C';
-        case 'C':
-          return 'A';
-        default:
-          throw err;
-      }
+      return beatenBy(player1.play);
     case 'lose':
-      switch(opponent) {
-        case 'A':
-          return 'C';
-        case 'B':
-          return 'A';
-        case 'C':
-          return 'B';
-        default:
-          throw err;
-      }
+      return beats(player1.play);
     case 'draw':
-      return opponent;
+      return player1.play;
     default:
-      throw err;
+      throw new Error('incompatible strategy');
   }
 }
 
-function findWinner(p1: string, p2: string): number {
-  const err = new Error('could not determine winner');
+function findWinner(players: IPlayers): number {
+  const p1 = players[0];
+  const p2 = players[1];
 
-  switch (p1) {
-    case 'rock':
-      switch (p2) {
-        case 'rock':
-          return 0;
-        case 'paper':
-          return 2;
-        case 'scissors':
-          return 1;
-        default:
-          throw err;
-      }
-    case 'paper':
-      switch (p2) {
-        case 'rock':
-          return 1;
-        case 'paper':
-          return 0;
-        case 'scissors':
-          return 2;
-        default:
-          throw err;
-      }
-    case 'scissors':
-      switch (p2) {
-        case 'rock':
-          return 2;
-        case 'paper':
-          return 1;
-        case 'scissors':
-          return 0;
-        default:
-          throw err;
-      }
-    default:
-      throw err;
+  if (p1.play === p2.play) {
+    return 0;
+  } else if (beats(p1.play) === p2.play) {
+    return 1;
+  } else {
+    return 2;
   }
 }
 
-export function scoreRound(round: Immutable<string>, rightWay: boolean): Immutable<number[]> {
+export function scoreRound(players: IPlayers): IPlayers {
+  let player1: Player;
+  let player2: Player;
+
+  let winner = findWinner(players);
+
+  if (winner === 0) {
+    player1 = { play: players[0].play, score: 3 };
+    player2 = { play: players[1].play, score: 3 };
+  } else {
+    player1 = { play: players[0].play, score: winner === 1 ? 6 : 0 };
+    player2 = { play: players[1].play, score: winner === 2 ? 6 : 0 };
+  }
+
+  player1 = { play: player1.play, score: player1.score + player1.play.score };
+  player2 = { play: player2.play, score: player2.score + player2.play.score };
+
+  return [player1, player2];
+}
+
+function getPlayers(round: string, rightWay: boolean): IPlayers {
   if (round.length !== 3) throw new Error("incorrect round format");
 
-  const player1 = rochambeau[round[0] || ''];
-  let player2: string;
+  const player1 = { play: rochambeau[ensure(round[0])], score: 0 };
+
+  let player2Play: Play;
   if (rightWay) {
-    player2 = rochambeau[choosePlay(round) || ''];
+    player2Play = choosePlay(player1, ensure(round[2]));
   } else {
-    player2 = rochambeau[round[2] || ''];
+    player2Play = rochambeau[ensure(round[2])];
   }
 
-  const winner = findWinner(player1, player2);
+  const player2 = { play: player2Play, score: 0 };
 
-  let player1Score = score[player1];
-  let player2Score = score[player2];
-
-  if (winner === 1) {
-    player1Score += 6;
-  } else if (winner === 2) {
-    player2Score += 6;
-  } else {
-    player1Score += 3;
-    player2Score += 3;
-  }
-  return [player1Score, player2Score];
+  return [player1, player2];
 }
 
-function scoreGame(game: Immutable<string[]>, rightWay: boolean): Immutable<number[]> {
-  return game.reduce<number[]>((acc, round) => {
-    const score = scoreRound(round, rightWay);
-    return [(acc[0] || 0) + (score[0] || 0), (acc[1] || 0) + (score[1] || 0)];
+function scoreGame(game: IArray<string>, rightWay: boolean): IScores {
+  return game.reduce((acc, round) => {
+    let players = getPlayers(round, rightWay);
+    players = scoreRound(players);
+
+    return [acc[0] + players[0].score, acc[1] + players[1].score];
   }, [0, 0]);
 }
 
-function program(data: Buffer): Immutable<{a: number, b: number}> {
-  const game = parseFileIntoLinesArray(
-    data
-  );
-
-  const result: {a: number, b: number} = {
-    a: scoreGame(game, false)[1] || 0,
-    b: scoreGame(game, true)[1] || 0,
-  }
-  return result
+function program(data: IArray<string>): IScores {
+  return [scoreGame(data, false)[1], scoreGame(data, true)[1]]
 }
 
-function run(path: string, cb: (result: Immutable<{a: number, b: number}>) => any ): void {
-  readFile(path, (err, data) => {
+function run(path: string, cb: (result: IScores) => any ): void {
+  readFileToStringArray(path, (err, data) => {
     if (err) throw err;
     cb(program(data));
   });

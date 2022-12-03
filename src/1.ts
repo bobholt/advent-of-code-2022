@@ -21,15 +21,14 @@
 
 // https://adventofcode.com/2022/day/1
 
-import { readFile } from '../lib/io.js';
-import type { Immutable } from '../lib/immutable';
+import { readFileToStringArray } from '../lib/io.js';
+import { orZero } from '../lib/util.js';
 
-function parseFileIntoLinesArray(b: Buffer): Immutable<string[]> {
-  const arr: Immutable<string[]> =  b.toString().trim().split('\n');
-  return arr;
-}
+import type { Immutable, IArray } from '../lib/immutable';
 
-function splitIntoOrderedElfCals(lines: Immutable<string[]>): Immutable<number[]> {
+type IResponse = Immutable<[number, number]>;
+
+function splitIntoOrderedElfCals(lines: IArray<string>): IArray<number> {
   let elfCalories: number[] = [];
   let cals: number = 0;
   lines.forEach((v: string, i: number) => {
@@ -50,30 +49,21 @@ function splitIntoOrderedElfCals(lines: Immutable<string[]>): Immutable<number[]
   return elfCalories;
 }
 
-function findHighestCals(elfCalories: Immutable<number[]>): number {
-  return elfCalories[0] || 0;
+function findHighestCals(elfCalories: IArray<number>): number {
+  return orZero(elfCalories[0]);
 }
 
-function findTopThreeCalsSum(elfCalories: Immutable<number[]>): number {
-  return (elfCalories[0] || 0) + (elfCalories[1] || 0) + (elfCalories[2] || 0);
+function findTopThreeCalsSum(elfCalories: IArray<number>): number {
+  return orZero(elfCalories[0]) + orZero(elfCalories[1]) + orZero(elfCalories[2]);
 }
 
-function program(data: Buffer): Immutable<{a: number, b: number}> {
-  const orderedElfCalories = splitIntoOrderedElfCals(
-    parseFileIntoLinesArray(
-      data
-    )
-  );
-
-  const result: {a: number, b: number} = {
-    a: findHighestCals(orderedElfCalories),
-    b: findTopThreeCalsSum(orderedElfCalories)
-  }
-  return result
+function program(data: IArray<string>): IResponse {
+  const orderedElfCalories = splitIntoOrderedElfCals(data);
+  return [findHighestCals(orderedElfCalories), findTopThreeCalsSum(orderedElfCalories)];
 }
 
-function run(path: string, cb: (result: Immutable<{a: number, b: number}>) => any ): void {
-  readFile(path, (err, data) => {
+function run(path: string, cb: (result: IResponse) => any ): void {
+  readFileToStringArray(path, (err, data) => {
     if (err) throw err;
     cb(program(data));
   });
