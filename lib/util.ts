@@ -1,3 +1,5 @@
+import type { List } from 'immutable';
+
 export function ensure<T>(arg: T | undefined | null, msg: string = 'unexpected undefined or null'): T {
   if (arg == null) {
     throw new TypeError(msg);
@@ -5,6 +7,6 @@ export function ensure<T>(arg: T | undefined | null, msg: string = 'unexpected u
   return arg;
 }
 
-export function orZero(arg: number | undefined | null): number {
-  return arg || 0;
+export function sumNumList(ns: List<number>): number {
+  return ns.reduce((acc, curr) => acc + curr, 0);
 }

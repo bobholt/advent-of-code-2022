@@ -1,5 +1,3 @@
-#!/usr/bin/env ts-node
-
 /*
  * Advent of Code 2022 Day 2
  * Copyright (C) 2022 Robert B. Holt
@@ -161,7 +159,7 @@ function program(data: List<string>): Scores {
   return [scoreGame(data, false)[1], scoreGame(data, true)[1]]
 }
 
-function run(path: string, cb: (result: Scores) => any ): void {
+function run(path: string, cb: (result: Scores) => void ): void {
   readFileToStringArray(path, (err, data) => {
     if (err) throw err;
     cb(program(data));

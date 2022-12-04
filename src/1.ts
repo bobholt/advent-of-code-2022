@@ -1,5 +1,3 @@
-#!/usr/bin/env ts-node
-
 /*
  * Advent of Code 2022 Day 1
  * Copyright (C) 2022 Robert B. Holt
@@ -21,51 +19,42 @@
 
 // https://adventofcode.com/2022/day/1
 
-import { readFileToStringArray } from '../lib/io.js';
-import { orZero } from '../lib/util.js';
 import { List } from 'immutable';
+import { readFileToStringArray } from '../lib/io.js';
+import { sumNumList } from '../lib/util.js';
 
-type IResponse = readonly [number, number];
+type Response = readonly [number, number];
+type Inventory = List<number>;
+type FileData = List<string>;
+type Totals = List<number>;
 
-function splitIntoOrderedElfCals(lines: List<string>): List<number> {
-  let elfCalories: number[] = [];
-  let cals: number = 0;
-  lines.forEach((v: string, i: number) => {
-    switch (v) {
-      case '':
-        elfCalories = elfCalories.concat(cals);
-        cals = 0;
-        break;
-      default:
-        cals += Number(v);
-        if (i == lines.size - 1) {
-          elfCalories = elfCalories.concat(cals);
-        }
-        break;
-    }
-  });
-  elfCalories.sort((a, b) => b - a);
-  return List(elfCalories);
+function sumAllCalories(inventories: List<Inventory>): Totals {
+  return inventories.reduce((acc, curr) => acc.push(sumNumList(curr)), List())
 }
 
-function findHighestCals(elfCalories: List<number>): number {
-  return orZero(elfCalories.get(0));
+function getInventories(data: FileData): List<Inventory> {
+  return data.reduce((acc, curr) => {
+    return curr === '' ? acc.push(List()) : acc.set(
+      acc.size - 1,
+      acc.last<Inventory>(List()).push(Number(curr))
+    );
+  }, List());
 }
 
-function findTopThreeCalsSum(elfCalories: List<number>): number {
-  return orZero(elfCalories.get(0)) + orZero(elfCalories.get(1)) + orZero(elfCalories.get(2));
+function program(data: FileData): Response {
+  const orderedElfCalories = sumAllCalories(
+    getInventories(data)
+  ).sort((a, b) => b - a);
+
+  return [
+    sumNumList(orderedElfCalories.take(1)),
+    sumNumList(orderedElfCalories.take(3))
+  ];
 }
 
-function program(data: List<string>): IResponse {
-  const orderedElfCalories = splitIntoOrderedElfCals(data);
-  return [findHighestCals(orderedElfCalories), findTopThreeCalsSum(orderedElfCalories)];
-}
-
-function run(path: string, cb: (result: IResponse) => any ): void {
+export function run(path: string, cb: (result: Response) => void ): void {
   readFileToStringArray(path, (err, data) => {
     if (err) throw err;
     cb(program(data));
   });
 };
-
-export { run };

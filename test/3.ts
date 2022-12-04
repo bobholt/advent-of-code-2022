@@ -1,15 +1,17 @@
 #!/usr/bin/env ts-node
 
-import { assert } from '../lib/test.js'
+import { assert } from '../lib/test.js';
+import { ensure } from '../lib/util.js';
 import { itemValue, makeRucksack, run } from '../src/3.js';
+import { Set } from 'immutable';
 
 const r1 = makeRucksack('vJrwpWtwJgWrhcsFMMfFFhFp');
-assert(r1[0].join('') === 'vJrwpWtg');
-assert(r1[1].join('') === 'hcsFMfp');
+assert(ensure(r1.get(0)).equals(Set('vJrwpWtwJgWr')));
+assert(ensure(r1.get(1)).equals(Set('hcsFMMfFFhFp')));
 
 const r2 = makeRucksack('jqHRNqRjqzjGDLGLrsFMfFZSrLrFZsSL');
-assert(r2[0].join('') === 'DGHjLNqRz');
-assert(r2[1].join('') === 'rsFMfZSL');
+assert(ensure(r2.get(0)).equals(Set('jqHRNqRjqzjGDLGL')));
+assert(ensure(r2.get(1)).equals(Set('rsFMfFZSrLrFZsSL')));
 
 assert(itemValue('p') === 16);
 assert(itemValue('L') === 38);
