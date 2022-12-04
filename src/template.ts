@@ -19,6 +19,4 @@
  * <https://www.gnu.org/licenses/>.
 */
 
-// import type { Immutable } from '../lib/immutable';
-
 console.log('Hello, World!');

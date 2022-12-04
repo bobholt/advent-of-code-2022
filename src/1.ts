@@ -23,12 +23,11 @@
 
 import { readFileToStringArray } from '../lib/io.js';
 import { orZero } from '../lib/util.js';
+import { List } from 'immutable';
 
-import type { Immutable, IArray } from '../lib/immutable';
+type IResponse = readonly [number, number];
 
-type IResponse = Immutable<[number, number]>;
-
-function splitIntoOrderedElfCals(lines: IArray<string>): IArray<number> {
+function splitIntoOrderedElfCals(lines: List<string>): List<number> {
   let elfCalories: number[] = [];
   let cals: number = 0;
   lines.forEach((v: string, i: number) => {
@@ -39,25 +38,25 @@ function splitIntoOrderedElfCals(lines: IArray<string>): IArray<number> {
         break;
       default:
         cals += Number(v);
-        if (i == lines.length - 1) {
+        if (i == lines.size - 1) {
           elfCalories = elfCalories.concat(cals);
         }
         break;
     }
   });
   elfCalories.sort((a, b) => b - a);
-  return elfCalories;
+  return List(elfCalories);
 }
 
-function findHighestCals(elfCalories: IArray<number>): number {
-  return orZero(elfCalories[0]);
+function findHighestCals(elfCalories: List<number>): number {
+  return orZero(elfCalories.get(0));
 }
 
-function findTopThreeCalsSum(elfCalories: IArray<number>): number {
-  return orZero(elfCalories[0]) + orZero(elfCalories[1]) + orZero(elfCalories[2]);
+function findTopThreeCalsSum(elfCalories: List<number>): number {
+  return orZero(elfCalories.get(0)) + orZero(elfCalories.get(1)) + orZero(elfCalories.get(2));
 }
 
-function program(data: IArray<string>): IResponse {
+function program(data: List<string>): IResponse {
   const orderedElfCalories = splitIntoOrderedElfCals(data);
   return [findHighestCals(orderedElfCalories), findTopThreeCalsSum(orderedElfCalories)];
 }

@@ -20,5 +20,8 @@
   "devDependencies": {
     "@types/node": "^18.11.9",
     "tslib": "^2.4.1"
+  },
+  "dependencies": {
+    "immutable": "^4.1.0"
   }
 }

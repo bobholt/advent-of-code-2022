@@ -23,38 +23,39 @@
 
 import { readFileToStringArray } from '../lib/io.js';
 import { ensure } from '../lib/util.js';
+import type { List, RecordOf } from 'immutable';
+import { Map, Record } from 'immutable';
 
-import type { Immutable, IArray, IObject } from '../lib/immutable';
+type Scores = readonly [number, number];
 
-type IScores = Immutable<[number, number]>;
-type Player = Immutable<{
-  play: Play,
-  score: number,
-}>;
-type IPlayers = Immutable<[Player, Player]>;
-type Play = Immutable<{
-  name: string,
-  score: number,
-}>;
+type PlayProps = { name: string, score: number };
+type Play = RecordOf<PlayProps>;
+const makePlay: Record.Factory<PlayProps> = Record({ name: '', score: 0 });
 
-export const rock: Play = { name: 'rock', score: 1 };
-export const paper: Play = { name: 'paper', score: 2 };
-export const scissors: Play = { name: 'scissors', score: 3 };
+type PlayerProps = { play: Play, score: number };
+type Player = RecordOf<PlayerProps>;
+export const makePlayer: Record.Factory<PlayerProps> = Record({ play: makePlay(), score: 0 });
 
-const rochambeau: IObject = {
+type Players = readonly [Player, Player];
+
+export const rock: Play = makePlay({ name: 'rock', score: 1 });
+export const paper: Play = makePlay({ name: 'paper', score: 2 });
+export const scissors: Play = makePlay({ name: 'scissors', score: 3 });
+
+const rochambeau: Map<string, Play> = Map({
   A: rock,
   X: rock,
   B: paper,
   Y: paper,
   C: scissors,
   Z: scissors,
-}
+});
 
-const strategy: IObject = {
+const strategy: Map<string, string> = Map({
   X: 'lose',
   Y: 'draw',
   Z: 'win',
-}
+});
 
 function beats(play: Play): Play {
   switch (play) {
@@ -83,7 +84,7 @@ function beatenBy(play: Play): Play {
 }
 
 function choosePlay(player1: Player, s: string): Play {
-  const strat = strategy[s];
+  const strat = strategy.get(s);
 
   switch (strat) {
     case 'win':
@@ -97,7 +98,7 @@ function choosePlay(player1: Player, s: string): Play {
   }
 }
 
-function findWinner(players: IPlayers): number {
+function findWinner(players: Players): number {
   const p1 = players[0];
   const p2 = players[1];
 
@@ -110,44 +111,44 @@ function findWinner(players: IPlayers): number {
   }
 }
 
-export function scoreRound(players: IPlayers): IPlayers {
+export function scoreRound(players: Players): Players {
   let player1: Player;
   let player2: Player;
 
   let winner = findWinner(players);
 
   if (winner === 0) {
-    player1 = { play: players[0].play, score: 3 };
-    player2 = { play: players[1].play, score: 3 };
+    player1 = makePlayer({ play: players[0].play, score: 3 });
+    player2 = makePlayer({ play: players[1].play, score: 3 });
   } else {
-    player1 = { play: players[0].play, score: winner === 1 ? 6 : 0 };
-    player2 = { play: players[1].play, score: winner === 2 ? 6 : 0 };
+    player1 = makePlayer({ play: players[0].play, score: winner === 1 ? 6 : 0 });
+    player2 = makePlayer({ play: players[1].play, score: winner === 2 ? 6 : 0 });
   }
 
-  player1 = { play: player1.play, score: player1.score + player1.play.score };
-  player2 = { play: player2.play, score: player2.score + player2.play.score };
+  player1 = makePlayer({ play: player1.play, score: player1.score + player1.play.score });
+  player2 = makePlayer({ play: player2.play, score: player2.score + player2.play.score });
 
   return [player1, player2];
 }
 
-function getPlayers(round: string, rightWay: boolean): IPlayers {
+function getPlayers(round: string, rightWay: boolean): Players {
   if (round.length !== 3) throw new Error("incorrect round format");
 
-  const player1 = { play: rochambeau[ensure(round[0])], score: 0 };
+  const player1 = makePlayer({ play: ensure(rochambeau.get(ensure(round[0]))), score: 0 });
 
   let player2Play: Play;
   if (rightWay) {
     player2Play = choosePlay(player1, ensure(round[2]));
   } else {
-    player2Play = rochambeau[ensure(round[2])];
+    player2Play = ensure(rochambeau.get(ensure(round[2])));
   }
 
-  const player2 = { play: player2Play, score: 0 };
+  const player2 = makePlayer({ play: player2Play, score: 0 });
 
   return [player1, player2];
 }
 
-function scoreGame(game: IArray<string>, rightWay: boolean): IScores {
+function scoreGame(game: List<string>, rightWay: boolean): Scores {
   return game.reduce((acc, round) => {
     let players = getPlayers(round, rightWay);
     players = scoreRound(players);
@@ -156,11 +157,11 @@ function scoreGame(game: IArray<string>, rightWay: boolean): IScores {
   }, [0, 0]);
 }
 
-function program(data: IArray<string>): IScores {
+function program(data: List<string>): Scores {
   return [scoreGame(data, false)[1], scoreGame(data, true)[1]]
 }
 
-function run(path: string, cb: (result: IScores) => any ): void {
+function run(path: string, cb: (result: Scores) => any ): void {
   readFileToStringArray(path, (err, data) => {
     if (err) throw err;
     cb(program(data));
