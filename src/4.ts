@@ -19,18 +19,21 @@
 
 // https://adventofcode.com/2022/day/4
 
-import { List, Record } from 'immutable';
+import { Record } from 'immutable';
 import type { RecordOf } from 'immutable';
 import { readFileToStringArray } from '../lib/io.js';
-import { ensure } from '../lib/util.js';
+import type { DataStringArray } from '../lib/io.js';
+import { Brand, ensure } from '../lib/util.js';
 
 type Response = readonly [number, number];
-type FileData = List<string>;
 
 type AssignmentProps = { min: number, max: number };
-type Assignment = RecordOf<AssignmentProps>;
+type Assignment = Brand<RecordOf<AssignmentProps>, 'Assignment'>;
 const makeAssignment: Record.Factory<AssignmentProps> =
   Record({ min: 0, max: 0 });
+function Assignment(r?: AssignmentProps): Assignment {
+  return r ? makeAssignment(r) as Assignment : Assignment(makeAssignment());
+}
 
 function isFullOverlap(a1: Assignment, a2: Assignment): boolean {
   return (a1.min <= a2.min && a1.max >= a2.max) ||
@@ -43,7 +46,7 @@ function isAnyOverlap(a1: Assignment, a2: Assignment): boolean {
     (a1.min >= a2.min && a1.max <= a2.max);
 }
 
-function testAssignments(data: FileData, test: Function): number {
+function testAssignments(data: DataStringArray, test: Function): number {
   return data.reduce((acc, curr) => {
     const [a1, a2] = lineToAssignments(curr);
     if (test(a1, a2)) {
@@ -55,7 +58,7 @@ function testAssignments(data: FileData, test: Function): number {
 
 function stringToAssignment(a: string): Assignment {
   const [min, max] = a.split('-');
-  return makeAssignment({ min: Number(min), max: Number(max) })
+  return Assignment({ min: Number(min), max: Number(max) })
 }
 
 function lineToAssignments(row: string): [Assignment, Assignment] {
@@ -63,7 +66,7 @@ function lineToAssignments(row: string): [Assignment, Assignment] {
   return [stringToAssignment(ensure(a1)), stringToAssignment(ensure(a2))];
 }
 
-function program(data: FileData): Response {
+function program(data: DataStringArray): Response {
   return [
     testAssignments(data, isFullOverlap),
     testAssignments(data, isAnyOverlap),

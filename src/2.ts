@@ -20,27 +20,35 @@
 // https://adventofcode.com/2022/day/2
 
 import { readFileToStringArray } from '../lib/io.js';
-import { ensure } from '../lib/util.js';
-import type { List, RecordOf } from 'immutable';
+import type { DataStringArray } from '../lib/io.js';
+import { Brand, ensure } from '../lib/util.js';
+import type { RecordOf } from 'immutable';
 import { Map, Record } from 'immutable';
 
 type Response = readonly [number, number];
-type FileData = List<string>;
 type Scores = readonly [number, number];
 
 type PlayProps = { name: string, score: number };
-type Play = RecordOf<PlayProps>;
+type Play = Brand<RecordOf<PlayProps>, 'Play'>;
 const makePlay: Record.Factory<PlayProps> = Record({ name: '', score: 0 });
+function Play(r?: PlayProps): Play {
+  return r ? makePlay(r) as Play : Play(makePlay());
+}
 
 type PlayerProps = { play: Play, score: number };
-type Player = RecordOf<PlayerProps>;
-export const makePlayer: Record.Factory<PlayerProps> = Record({ play: makePlay(), score: 0 });
+type Player = Brand<RecordOf<PlayerProps>, 'Player'>;
+const makePlayer: Record.Factory<PlayerProps> = Record({ play: Play(), score: 0 });
+export function Player(r?: PlayerProps): Player {
+  return r ? makePlayer(r) as Player : Player(makePlayer());
+}
 
 type Players = readonly [Player, Player];
 
-export const rock: Play = makePlay({ name: 'rock', score: 1 });
-export const paper: Play = makePlay({ name: 'paper', score: 2 });
-export const scissors: Play = makePlay({ name: 'scissors', score: 3 });
+type Strategy = 'win' | 'lose' | 'draw';
+
+export const rock: Play = Play({ name: 'rock', score: 1 });
+export const paper: Play = Play({ name: 'paper', score: 2 });
+export const scissors: Play = Play({ name: 'scissors', score: 3 });
 
 const rochambeau: Map<string, Play> = Map({
   A: rock,
@@ -51,7 +59,7 @@ const rochambeau: Map<string, Play> = Map({
   Z: scissors,
 });
 
-const strategy: Map<string, string> = Map({
+const strategy: Map<string, Strategy> = Map({
   X: 'lose',
   Y: 'draw',
   Z: 'win',
@@ -118,15 +126,15 @@ export function scoreRound(players: Players): Players {
   let winner = findWinner(players);
 
   if (winner === 0) {
-    player1 = makePlayer({ play: players[0].play, score: 3 });
-    player2 = makePlayer({ play: players[1].play, score: 3 });
+    player1 = Player({ play: players[0].play, score: 3 });
+    player2 = Player({ play: players[1].play, score: 3 });
   } else {
-    player1 = makePlayer({ play: players[0].play, score: winner === 1 ? 6 : 0 });
-    player2 = makePlayer({ play: players[1].play, score: winner === 2 ? 6 : 0 });
+    player1 = Player({ play: players[0].play, score: winner === 1 ? 6 : 0 });
+    player2 = Player({ play: players[1].play, score: winner === 2 ? 6 : 0 });
   }
 
-  player1 = makePlayer({ play: player1.play, score: player1.score + player1.play.score });
-  player2 = makePlayer({ play: player2.play, score: player2.score + player2.play.score });
+  player1 = Player({ play: player1.play, score: player1.score + player1.play.score });
+  player2 = Player({ play: player2.play, score: player2.score + player2.play.score });
 
   return [player1, player2];
 }
@@ -134,7 +142,7 @@ export function scoreRound(players: Players): Players {
 function getPlayers(round: string, rightWay: boolean): Players {
   if (round.length !== 3) throw new Error("incorrect round format");
 
-  const player1 = makePlayer({ play: ensure(rochambeau.get(ensure(round[0]))), score: 0 });
+  const player1 = Player({ play: ensure(rochambeau.get(ensure(round[0]))), score: 0 });
 
   let player2Play: Play;
   if (rightWay) {
@@ -143,12 +151,12 @@ function getPlayers(round: string, rightWay: boolean): Players {
     player2Play = ensure(rochambeau.get(ensure(round[2])));
   }
 
-  const player2 = makePlayer({ play: player2Play, score: 0 });
+  const player2 = Player({ play: player2Play, score: 0 });
 
   return [player1, player2];
 }
 
-function scoreGame(data: FileData, rightWay: boolean): Scores {
+function scoreGame(data: DataStringArray, rightWay: boolean): Scores {
   return data.reduce((acc, round) => {
     let players = getPlayers(round, rightWay);
     players = scoreRound(players);
@@ -157,7 +165,7 @@ function scoreGame(data: FileData, rightWay: boolean): Scores {
   }, [0, 0]);
 }
 
-function program(data: FileData): Response {
+function program(data: DataStringArray): Response {
   return [scoreGame(data, false)[1], scoreGame(data, true)[1]]
 }
 

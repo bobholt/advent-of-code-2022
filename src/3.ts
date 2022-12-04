@@ -20,13 +20,21 @@
 // https://adventofcode.com/2022/day/3
 
 import { readFileToStringArray } from '../lib/io.js';
-import { ensure } from '../lib/util.js';
+import type { DataStringArray } from '../lib/io.js';
+import { Brand, ensure } from '../lib/util.js';
 import { List, Set } from 'immutable';
 
 type Response = readonly [number, number];
-type Compartment = Set<string>;
+type Compartment = Brand<Set<string>, 'Compartment'>;
+function Compartment(s?: Set<string>): Compartment {
+  return s ? s as Compartment : Compartment(Set());
+}
+
 type Rucksack = List<Compartment>;
-type Elf = Set<string>;
+type Elf = Brand<Set<string>, 'Elf'>;
+function Elf(s?: Set<string>): Elf {
+  return s ? s as Elf : Elf(Set());
+}
 type ElfGroup = List<Elf>;
 
 const alphabetLower = 'abcdefghijklmnopqrstuvwxyz';
@@ -44,19 +52,19 @@ function intersection<T>(l: List<Set<T>>): T {
 
 export function makeRucksack(data:string): Rucksack {
   const compartmentLength = data.length / 2;
-  let ruck: List<Set<string>> = List();
-  ruck = ruck.push(Set(data.slice(0, compartmentLength)));
-  ruck = ruck.push(Set(data.slice(compartmentLength)));
+  let ruck: List<Compartment> = List();
+  ruck = ruck.push(Compartment(Set(data.slice(0, compartmentLength))));
+  ruck = ruck.push(Compartment(Set(data.slice(compartmentLength))));
   return ruck;
 }
 
-function makeElfGroups(data: List<string>): List<ElfGroup> {
+function makeElfGroups(data: DataStringArray): List<ElfGroup> {
   let i = 0;
   let groups: List<ElfGroup> = List();
   while (i < data.size) {
     let eg: ElfGroup = List();
     for (let j = 0; j < 3; j++) {
-      eg = eg.push(Set(ensure(data.get(i + j))));
+      eg = eg.push(Elf(Set(ensure(data.get(i + j)))));
     }
     groups = groups.push(eg);
     i += 3;
@@ -64,7 +72,7 @@ function makeElfGroups(data: List<string>): List<ElfGroup> {
   return groups;
 }
 
-function program(data: List<string>): Response {
+function program(data: DataStringArray): Response {
   const errorSum = data.reduce((acc, curr) => {
     const ruck = makeRucksack(curr);
     const badItem = intersection(ruck);
