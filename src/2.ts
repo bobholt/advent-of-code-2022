@@ -24,6 +24,8 @@ import { ensure } from '../lib/util.js';
 import type { List, RecordOf } from 'immutable';
 import { Map, Record } from 'immutable';
 
+type Response = readonly [number, number];
+type FileData = List<string>;
 type Scores = readonly [number, number];
 
 type PlayProps = { name: string, score: number };
@@ -146,8 +148,8 @@ function getPlayers(round: string, rightWay: boolean): Players {
   return [player1, player2];
 }
 
-function scoreGame(game: List<string>, rightWay: boolean): Scores {
-  return game.reduce((acc, round) => {
+function scoreGame(data: FileData, rightWay: boolean): Scores {
+  return data.reduce((acc, round) => {
     let players = getPlayers(round, rightWay);
     players = scoreRound(players);
 
@@ -155,11 +157,11 @@ function scoreGame(game: List<string>, rightWay: boolean): Scores {
   }, [0, 0]);
 }
 
-function program(data: List<string>): Scores {
+function program(data: FileData): Response {
   return [scoreGame(data, false)[1], scoreGame(data, true)[1]]
 }
 
-function run(path: string, cb: (result: Scores) => void ): void {
+function run(path: string, cb: (result: Response) => void ): void {
   readFileToStringArray(path, (err, data) => {
     if (err) throw err;
     cb(program(data));

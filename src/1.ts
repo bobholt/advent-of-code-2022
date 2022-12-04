@@ -21,27 +21,38 @@
 
 import { List } from 'immutable';
 import { readFileToStringArray } from '../lib/io.js';
+import type { DataStringArray } from '../lib/io.js';
 import { sumNumList } from '../lib/util.js';
+import type { Brand } from '../lib/util.js';
 
 type Response = readonly [number, number];
-type Inventory = List<number>;
-type FileData = List<string>;
-type Totals = List<number>;
 
-function sumAllCalories(inventories: List<Inventory>): Totals {
-  return inventories.reduce((acc, curr) => acc.push(sumNumList(curr)), List())
+type Inventory = Brand<List<number>, 'Inventory'>;
+function Inventory(l?: List<number>): Inventory {
+  return l ? l as Inventory : Inventory(List());
 }
 
-function getInventories(data: FileData): List<Inventory> {
+type Totals = Brand<List<number>, 'Totals'>;
+function Totals(l?: List<number>): Totals {
+  return l ? l as Totals : Totals(List());
+}
+
+function sumAllCalories(inventories: List<Inventory>): Totals {
+  return inventories.reduce(
+    (acc, curr) => acc.push(sumNumList(curr)), List()
+  ) as Totals
+}
+
+function getInventories(data: DataStringArray): List<Inventory> {
   return data.reduce((acc, curr) => {
-    return curr === '' ? acc.push(List()) : acc.set(
+    return curr === '' ? acc.push(Inventory()) : acc.set(
       acc.size - 1,
-      acc.last<Inventory>(List()).push(Number(curr))
+      Inventory(acc.last<Inventory>(Inventory()).push(Number(curr)))
     );
   }, List());
 }
 
-function program(data: FileData): Response {
+function program(data: DataStringArray): Response {
   const orderedElfCalories = sumAllCalories(
     getInventories(data)
   ).sort((a, b) => b - a);
@@ -49,11 +60,11 @@ function program(data: FileData): Response {
   return [
     sumNumList(orderedElfCalories.take(1)),
     sumNumList(orderedElfCalories.take(3))
-  ];
+  ] as Response;
 }
 
 export function run(path: string, cb: (result: Response) => void ): void {
-  readFileToStringArray(path, (err, data) => {
+  readFileToStringArray(path, (err, data: DataStringArray) => {
     if (err) throw err;
     cb(program(data));
   });

@@ -3,6 +3,5 @@ export function assert(a: boolean): void {
     console.log('ok');
   } else {
     throw new Error("fail");
-    ;
   }
 }

@@ -1,6 +1,8 @@
 import * as fs from 'fs';
 import { List } from 'immutable';
 
+export type DataStringArray = List<string> & { __brand: "File Data" };
+
 export const readFile = fs.readFile;
 
 export function readFileToString(
@@ -18,13 +20,13 @@ export function readFileToString(
 
 export function readFileToStringArray(
   path: fs.PathOrFileDescriptor,
-  cb: (err: NodeJS.ErrnoException | null, data: List<string>) => void
+  cb: (err: NodeJS.ErrnoException | null, data: DataStringArray) => void
 ): void {
   readFile(path, (err, data) => {
     let ss: string[] = [];
     if (!err) {
       ss= data.toString().trim().split('\n');
     }
-    cb(err, List(ss));
+    cb(err, List(ss) as DataStringArray);
   });
 }
