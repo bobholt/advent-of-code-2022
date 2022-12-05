@@ -62,11 +62,13 @@ function makeElfGroups(data: DataStringArray): List<ElfGroup> {
   let i = 0;
   let groups: List<ElfGroup> = List();
   while (i < data.size) {
-    let eg: ElfGroup = List();
-    for (let j = 0; j < 3; j++) {
-      eg = eg.push(Elf(Set(ensure(data.get(i + j)))));
+    if (data.get(i) !== '') {
+      let eg: ElfGroup = List();
+      for (let j = 0; j < 3; j++) {
+        eg = eg.push(Elf(Set(ensure(data.get(i + j)))));
+      }
+      groups = groups.push(eg);
     }
-    groups = groups.push(eg);
     i += 3;
   }
   return groups;
@@ -74,6 +76,9 @@ function makeElfGroups(data: DataStringArray): List<ElfGroup> {
 
 function program(data: DataStringArray): Response {
   const errorSum = data.reduce((acc, curr) => {
+    if (curr === '') {
+      return acc;
+    }
     const ruck = makeRucksack(curr);
     const badItem = intersection(ruck);
     const priority = itemValue(badItem);

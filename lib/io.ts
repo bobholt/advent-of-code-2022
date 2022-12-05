@@ -25,7 +25,7 @@ export function readFileToStringArray(
   readFile(path, (err, data) => {
     let ss: string[] = [];
     if (!err) {
-      ss= data.toString().trim().split('\n');
+      ss = data.toString().split('\n');
     }
     cb(err, List(ss) as DataStringArray);
   });

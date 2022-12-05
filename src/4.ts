@@ -48,6 +48,9 @@ function isAnyOverlap(a1: Assignment, a2: Assignment): boolean {
 
 function testAssignments(data: DataStringArray, test: Function): number {
   return data.reduce((acc, curr) => {
+    if (curr === '') {
+      return acc;
+    }
     const [a1, a2] = lineToAssignments(curr);
     if (test(a1, a2)) {
       return acc + 1;

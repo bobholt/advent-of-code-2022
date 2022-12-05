@@ -158,6 +158,9 @@ function getPlayers(round: string, rightWay: boolean): Players {
 
 function scoreGame(data: DataStringArray, rightWay: boolean): Scores {
   return data.reduce((acc, round) => {
+    if (round === '') {
+      return acc;
+    }
     let players = getPlayers(round, rightWay);
     players = scoreRound(players);
 
