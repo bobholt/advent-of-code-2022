@@ -27,6 +27,6 @@ export function readFileToStringArray(
     if (!err) {
       ss = data.toString().split('\n');
     }
-    cb(err, List(ss) as DataStringArray);
+    cb(err, List(ss).filterNot((v, i) => i === ss.length - 1 && v === '') as DataStringArray);
   });
 }
