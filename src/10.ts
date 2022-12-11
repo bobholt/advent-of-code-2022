@@ -44,7 +44,7 @@ function runOperation(op: string, num: number, c: Cycles): Cycles {
   }
 }
 
-function signalStrength(cycle: number, cycles:Cycles): number {
+function signalStrength(cycle: number, cycles: Cycles): number {
   return cycle * cycles.get(cycle - 1, 0);
 }
 
@@ -54,14 +54,14 @@ function drawCRT(cycles: Cycles): void {
     if (horiz >= v - 1 && horiz <= v + 1) {
       return '#';
     }
-    return '.';
+    return ' ';
   });
 
   const crt: string[][] = fullScan.reduce((crt, pixel, i) => {
     const row: number = Math.floor(i / 40)
     ensure(crt[row]).push(pixel);
     return crt;
-  }, [[],[],[],[],[],[], []] as string[][]);
+  }, [[], [], [], [], [], [], []] as string[][]);
 
   crt.forEach((scanLine) => {
     console.log(scanLine.join(''));
@@ -84,7 +84,7 @@ function program(data: DataStringArray): Response {
   return [a, 0];
 }
 
-export function run(path: string, cb: (result: Response) => void ): void {
+export function run(path: string, cb: (result: Response) => void): void {
   readFileToStringArray(path, (err, data) => {
     if (err) throw err;
     cb(program(data));
