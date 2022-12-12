@@ -19,30 +19,23 @@
 
 // https://adventofcode.com/2022/day/11
 
-import { List, Record } from 'immutable';
-import type { RecordOf } from 'immutable';
 import { readFileToStringArray } from '../lib/io.js';
 import type { DataStringArray } from '../lib/io.js';
-// import { OrderedSet } from 'immutable';
-import { Brand, ensure } from '../lib/util.js';
+import { ensure } from '../lib/util.js';
 
 type Response = readonly [number, number];
 
-type MonkeyProps = {
-  items: List<number>,
+type Monkey = {
+  items: bigint[],
   itemsInspected: number,
-  test: number,
+  test: bigint,
   trueTarget: number,
   falseTarget: number,
-  worry: (i: number) => number,
-  toss: (i: number, t: number, tt: number, ft: number) => number,
- };
-type Monkey = Brand<RecordOf<MonkeyProps>, 'Monkey'>;
-const makeMonkey: Record.Factory<MonkeyProps> =
-  Record({ items: List(), itemsInspected: 0, test: 0, trueTarget: 0, falseTarget: 0, worry: (_) => 0, toss: (_, __, ___, ____) => 0 });
-function Monkey(r?: MonkeyProps): Monkey {
-  return r ? makeMonkey(r) as Monkey : Monkey(makeMonkey());
-}
+  op: string,
+  opVal: 'old' | bigint,
+};
+const baseMonkey: Monkey =
+  { items: [] as bigint[], itemsInspected: 0, test: BigInt(0), trueTarget: 0, falseTarget: 0, op: '', opVal: 'old' };
 
 const monkeyRegEx = /^Monkey (\d):{1}/;
 const startingItemRegEx = /^\s{2}Starting items: (.*)/;
@@ -51,50 +44,38 @@ const testRegEx = /^\s{2}Test: divisible by (.*)/;
 const trueRegEx = /^\s{4}If true: throw to monkey (\d*)/;
 const falseRegEx = /^\s{4}If false: throw to monkey (\d*)/;
 
-function parseMonkeys(data: DataStringArray): List<Monkey> {
-  let monkeys: List<Monkey> = List();
+function parseMonkeys(data: DataStringArray): Monkey[] {
+  let monkeys: Monkey[] = [];
   let currentMonkey: number = 0;
 
   data.forEach((line) => {
     if (monkeyRegEx.test(line)) {
       currentMonkey = Number(ensure(line.match(monkeyRegEx))[1]);
-      return monkeys = monkeys.push(Monkey());
+      monkeys.push(Object.assign({}, baseMonkey));
+      return monkeys;
     }
     if (startingItemRegEx.test(line)) {
-      return monkeys = monkeys.setIn([currentMonkey, 'items'], List(ensure(ensure(line.match(startingItemRegEx))[1]).split(', ')).map((v) => Number(v)));
+      ensure(monkeys[currentMonkey]).items = ensure(ensure(line.match(startingItemRegEx))[1]).split(', ').map((v) => BigInt(v))
+      return monkeys;
     }
     if (operationRegEx.test(line)) {
       const [_, op, val] = ensure(line.match(operationRegEx));
-      return monkeys = monkeys.setIn([currentMonkey, 'worry'], (i: number) => {
-        let target: number = 0;
-        if (val === 'old') {
-          target = i;
-        } else {
-          target = Number(ensure(val));
-        }
-        if (op === '+') {
-           return target + i;
-        }
-        if (op === '*') {
-          return target * i
-        }
-        throw new Error('cannot calculate');
-      });
+      const opVal: bigint | 'old' = (val || 0) === 'old' ? 'old' : BigInt(val || 0);
+      ensure(monkeys[currentMonkey]).op = ensure(op);
+      ensure(monkeys[currentMonkey]).opVal = opVal;
+      return monkeys;
     }
     if (testRegEx.test(line)) {
-      return monkeys = monkeys.setIn([currentMonkey, 'test'], Number(ensure(line.match(testRegEx))[1]));
+      ensure(monkeys[currentMonkey]).test = BigInt(ensure(line.match(testRegEx))[1] || 0);
+      return monkeys;
     }
     if (trueRegEx.test(line)) {
-      return monkeys = monkeys.setIn([currentMonkey, 'trueTarget'], Number(ensure(line.match(trueRegEx))[1]));
+      ensure(monkeys[currentMonkey]).trueTarget = Number(ensure(line.match(trueRegEx))[1]);
+      return monkeys;
     }
     if (falseRegEx.test(line)) {
-      monkeys = monkeys = monkeys.setIn([currentMonkey, 'falseTarget'], Number(ensure(line.match(falseRegEx))[1]));
-      return monkeys = monkeys.setIn([currentMonkey, 'toss'], (i: number, t: number, tt: number, ft: number) => {
-        if (i % t === 0) {
-          return tt;
-        }
-        return ft;
-      });
+      ensure(monkeys[currentMonkey]).falseTarget = Number(ensure(line.match(falseRegEx))[1]);
+      return monkeys;
     }
     if (line === '') return;
     throw new Error(`i don't know what to do with this: ${line}`);
@@ -102,43 +83,41 @@ function parseMonkeys(data: DataStringArray): List<Monkey> {
   return monkeys;
 }
 
-function round(monkeys: List<Monkey>, worryFactor: number): List<Monkey> {
-  let newMonkeys = monkeys;
-  for (let i = 0; i < newMonkeys.size; i++) {
-    let currentMonkey = ensure(newMonkeys.get(i));
-    currentMonkey.items.forEach((j) => {
-      let newValue = Math.floor(currentMonkey.worry(j) * worryFactor);
-      const monkeyToThrowTo = currentMonkey.toss(newValue, currentMonkey.test, currentMonkey.trueTarget, currentMonkey.falseTarget);
-      // console.log(j, newValue, currentMonkey.test, newValue % currentMonkey.test === 0, currentMonkey.trueTarget, currentMonkey.falseTarget, monkeyToThrowTo);
-      newMonkeys = newMonkeys.set(monkeyToThrowTo, ensure(newMonkeys.get(monkeyToThrowTo)).update('items', (item) => item.push(newValue)));
-      currentMonkey = currentMonkey.set('items', currentMonkey.items.rest());
-      currentMonkey = currentMonkey.update('itemsInspected', (v) => v + 1);
-      newMonkeys = newMonkeys.set(i, currentMonkey);
-    });
-  }
-  return newMonkeys;
+function round(monkeys: Monkey[], worryFactor: bigint | null): Monkey[] {
+  monkeys.forEach((monkey) => {
+    const {items, op, opVal, test, trueTarget, falseTarget} = monkey;
+    while (items.length) {
+      const i = items.shift() || BigInt(0);
+      const target: bigint = opVal === 'old' ? i : opVal;
+      let newValue = op === '+' ? target + i : target * i;
+      if (worryFactor) {
+        newValue = newValue / worryFactor;
+      }
+      ensure(monkeys[newValue % test ? falseTarget : trueTarget]).items.push(newValue);
+      monkey.itemsInspected += 1;
+    }
+  });
+  return monkeys;
 }
 
 function program(data: DataStringArray): Response {
-  let monkeys: List<Monkey> = parseMonkeys(data);
-  let monkeysB: List<Monkey> = monkeys;
+  let monkeys: Monkey[] = parseMonkeys(data);
+  let monkeysB: Monkey[] = parseMonkeys(data);
+  const aWorry = BigInt(3);
+
   for (var i = 0; i < 20; i++) {
-    monkeys = round(monkeys, 1 / 3);
-  }
-  const a = monkeys.map((m) => m.itemsInspected).sort((a, b) => b - a).take(2).reduce((acc, curr) => acc * curr, 1);
-
-  for (var i = 0; i < 5; i++) {
-    // console.log(`---ROUND ${i + 1}---`)
-    monkeysB = round(monkeysB, 1);
-
-    // monkeysB.forEach((monkey, i) => {
-    //   console.log(`Monkey ${i}`, monkey.items.toJS(), monkey.itemsInspected);
-    // });
+    monkeys = round(monkeys, aWorry);
   }
 
-  const b = monkeysB.map((m) => m.itemsInspected).sort((a, b) => b - a).take(2).reduce((acc, curr) => acc * curr, 1);
+  for (var i = 0; i < 10000; i++) {
+    console.log(`---ROUND ${i + 1}---`)
+    monkeysB = round(monkeysB, null);
+  }
 
-  return [a, b];
+  return [
+    monkeys.map((m) => m.itemsInspected).sort((a, b) => b - a).slice(0, 2).reduce((acc, curr) => acc * curr, 1),
+    monkeysB.map((m) => m.itemsInspected).sort((a, b) => b - a).slice(0, 2).reduce((acc, curr) => acc * curr, 1),
+  ];
 }
 
 export function run(path: string, cb: (result: Response) => void): void {
